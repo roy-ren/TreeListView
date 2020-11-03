@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Workspace
+   version = "1.0">
+   <Group
+      location = "container:"
+      name = "spm">
+      <FileRef
+         location = "group:TreeListView">
+      </FileRef>
+   </Group>
+   <FileRef
+      location = "container:TreeList/TreeList.xcodeproj">
+   </FileRef>
+</Workspace>
