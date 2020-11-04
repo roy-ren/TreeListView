@@ -90,8 +90,6 @@ final class TreeListViewTests: XCTestCase {
         XCTAssertEqual(branchNode2.removeAllSubNodes(), nodes)
         XCTAssertEqual(branchNode2, leafNode2)
         XCTAssertNil(leafNode2.removeAllSubNodes())
-        
-        print(leafNode2)
     }
     
     func testTableSourceTree() {
@@ -105,7 +103,7 @@ final class TreeListViewTests: XCTestCase {
             var level: Int
             var superIdentifier: Int?
             var rank: Int
-            var state: TreeNodeState
+            var state: BranchNodeState
             
             static var emptyRootElement: Element {
                 .init(id: 0, element: 0, level: 0, superIdentifier: nil, rank: 0, state: .expand)

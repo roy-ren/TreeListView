@@ -72,7 +72,7 @@ extension TreeListViewController {
             }
             
             label.font = .systemFont(ofSize: 14)
-            backgroundColor = .systemBackground
+//            backgroundColor = .systemBackground
         }
         
         required convenience init() {
@@ -98,7 +98,7 @@ extension TreeListViewController {
         var level: Int
         var superIdentifier: Int?
         var rank: Int
-        var state: TreeNodeState
+        var state: BranchNodeState
         
         static var emptyRootElement: Element {
             .init(id: 0, element: 0, level: 0, superIdentifier: nil, rank: 0, state: .expand)

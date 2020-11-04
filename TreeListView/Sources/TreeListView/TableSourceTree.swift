@@ -30,7 +30,7 @@ public protocol TreeElementProtocol: Identifiable, Equatable {
 	var rank: Int { get }
 	
 	/// 展开状态
-	var state: TreeNodeState { get }
+	var state: BranchNodeState { get }
 	
 	static var emptyRootElement: Self { get }
 }
@@ -78,7 +78,6 @@ public struct TableSourceTree<Element: TreeElementProtocol> {
 								}
 							}
 						
-						print("nodes: \(nodes.map { $0.data.element }) superID: \(String(describing: superID))")
 						subNodesInfo.updateValue(nodes, forKey: superID)
 					}
 			}
@@ -98,45 +97,93 @@ public struct TableSourceTree<Element: TreeElementProtocol> {
 // MARK: - Toggle for expand
 extension TableSourceTree {
     public enum EditChange {
+        case none
 		case insert(change: Change)
 		case delete(change: Change)
 			
         public enum Change {
-			case cell(indexPathes: [IndexPath])
+			case cell(indexPaths: [IndexPath])
 			case section(indexSet: IndexSet)
+            case total(indexSet: IndexSet, indexPaths: [IndexPath])
+            
+            var changes: (indexSet: IndexSet, indexPaths: [IndexPath]) {
+                switch self {
+                case .cell(let indexPaths):
+                    return (.init(), indexPaths)
+                case .section(let indexSet):
+                    return (indexSet, [])
+                case let .total(indexSet, indexPaths):
+                    return (indexSet, indexPaths)
+                }
+            }
 		}
 	}
 	
-	public mutating func toggle(sectionAt index: Int) -> EditChange? {
+	public mutating func toggle(section: Int) -> EditChange {
 		// 1. search node
         // 每个section的superSection一定在它的前面
-		let secitonInfos = Dictionary(grouping: sections[0..<index], by: { $0.id })
+		let secitonInfos = Dictionary(grouping: sections[0..<section], by: { $0.id })
 		
-		var pathIdentifiers = [sections[index].id]
-		var element: Element? = sections[index].element
+		var pathIdentifiers = [sections[section].id]
+		var element: Element? = sections[section].element
 		
 		while let id = element?.superIdentifier {
 			pathIdentifiers.append(id)
 			element = secitonInfos[id]?.first?.element
 		}
 		
-        root = toggleNode(for: pathIdentifiers, in: root)
-        sections = root.emptyRootSections(isOnlyExpand: false)
-//        guard
-//            !pathIdentifiers.isEmpty,
-//            var toggleNode = searchNode(for: pathIdentifiers, in: root)
-//        else {
-//			return nil
-//		}
-//
-//        toggleNode.toggle()
-		
-		return nil
+        let result = toggleNode(for: pathIdentifiers, in: root)
+        root = result.node
+        sections = root.emptyRootSections(isOnlyExpand: true)
+
+        return generateChange(for: result.destinationNode, at: section)
 	}
     
-    private func toggleNode(for path: [Element.ID], in node: Node) -> Node {
-        print("toggleNode: \(node.data.element) path: \(path)")
+    private func generateChange(for node: Node, at section: Int) -> EditChange {
+        guard case .branch(_, _, let state) = node else {
+            return .none
+        }
         
+        var node = node
+        if .collapse == state { node.toggle() }
+        
+        let sections = node.generateSections(isOnlyExpand: true)
+        
+        guard let sectionElement = sections.first else {
+            return .none
+        }
+        
+        var change: EditChange.Change
+        
+        let indexPaths = (0..<sectionElement.cellElements.count).map {
+            IndexPath(row: $0, section: section)
+        }
+        
+        switch sections.count {
+        case 1:
+            guard !indexPaths.isEmpty else { return .none }
+            change = .cell(indexPaths: indexPaths)
+        default:
+            let indexSet = IndexSet((1..<sections.count).map { $0 + section })
+            if indexPaths.isEmpty {
+                change = .section(indexSet: indexSet)
+            } else {
+                change = .total(indexSet: indexSet, indexPaths: indexPaths)
+            }
+        }
+        
+        return .collapse == state ? .insert(change: change) : .delete(change: change)
+    }
+    
+    /// node：根据path已执行切换后的node，destinationNode：执行切换状态的节点（切换之前）
+    typealias ToggleResult = (node: Node, destinationNode: Node)
+    
+    /// 根据数据的 id 的数组对一个node中的某个指定node执行切换
+    /// - Parameters:
+    ///   - path: 数据的 id 数组，第一个id为最终需要切换状态的节点的id，最后一个id是参数node中的subnodes的某一个节点
+    ///   - node: path需要在该node中查找需要切换的node
+    /// - Returns:
+    private func toggleNode(for path: [Element.ID], in node: Node) -> ToggleResult {
         var currentPath = path
         let id = currentPath.removeLast()
         var node = node
@@ -148,15 +195,19 @@ extension TableSourceTree {
             fatalError("code not found")
         }
         
+        let destinationNode: Node
         if currentPath.isEmpty {
+            destinationNode = subNode
             subNode.toggle()
         } else {
-            subNode = toggleNode(for: currentPath, in: subNode)
+            let result = toggleNode(for: currentPath, in: subNode)
+            subNode = result.node
+            destinationNode = result.destinationNode
         }
         
         node.replace(subNode: subNode, at: subNodeIndex)
         
-        return node
+        return (node, destinationNode)
     }
 	
 	/// 在指定node中根据数据的特性superIdentifier的数组查找节点
@@ -212,8 +263,6 @@ extension TreeNode where Element: TreeElementProtocol {
 					return [.section(element: element, cellElements: [])]
 				}
                 
-                print("\(element.element) state: \(state)")
-				
 				var elements = [Element]()
 					
 				let subNodeSectionDatas: [NodeElementData] = subNodes
