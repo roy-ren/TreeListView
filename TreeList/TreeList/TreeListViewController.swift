@@ -10,18 +10,6 @@ import TreeListView
 import RLayoutKit
 import SwiftUI
 
-struct ListViewControllerWrapper<Controller: UIViewController>: UIViewControllerRepresentable {
-    typealias UIViewControllerType = Controller
-
-    func makeUIViewController(context: UIViewControllerRepresentableContext<ListViewControllerWrapper>) -> ListViewControllerWrapper.UIViewControllerType {
-        .init()
-    }
-
-    func updateUIViewController(_ uiViewController: ListViewControllerWrapper.UIViewControllerType, context: UIViewControllerRepresentableContext<ListViewControllerWrapper>) {
-        //
-    }
-}
-
 class TreeListViewController: UIViewController {
     
     private let listView: TreeListStaticView<Cell>
@@ -32,9 +20,9 @@ class TreeListViewController: UIViewController {
         .init(id: 2, element: 2, level: 1, superIdentifier: 0, rank: 1, state: .expand),
         .init(id: 3, element: 3, level: 2, superIdentifier: 1, rank: 0, state: .expand),
         .init(id: 4, element: 4, level: 2, superIdentifier: 1, rank: 1, state: .expand),
-        .init(id: 5, element: 5, level: 3, superIdentifier: 2, rank: 0, state: .expand),
-        .init(id: 6, element: 6, level: 4, superIdentifier: 4, rank: 0, state: .expand),
-        .init(id: 7, element: 7, level: 4, superIdentifier: 5, rank: 0, state: .expand)
+        .init(id: 5, element: 5, level: 2, superIdentifier: 2, rank: 0, state: .expand),
+        .init(id: 6, element: 6, level: 3, superIdentifier: 4, rank: 0, state: .expand),
+        .init(id: 7, element: 7, level: 3, superIdentifier: 5, rank: 0, state: .expand)
     ]
         
     init() {
@@ -59,20 +47,29 @@ class TreeListViewController: UIViewController {
 
 extension TreeListViewController {
     class Cell: UIView, ListViewCellProtocol {
-        
+        private let iconImageView = UIImageView()
         private let label = UILabel()
+        private var iconLeadingConstraint: NSLayoutConstraint!
         
         override init(frame: CGRect) {
             super.init(frame: frame)
             
+            iconImageView.rl.added(to: self, andLayout: {
+                $0.size == CGSize(width: 20, height: 20)
+                $0.centerY == $1.centerY
+            })
+            
+            iconLeadingConstraint = iconImageView.leadingAnchor.constraint(equalTo: self.leadingAnchor, constant: 15)
+            iconLeadingConstraint.isActive = true
+            
             label.rl.added(to: self) {
-                $0.leading == 15
+                $0.leading == iconImageView.rl.trailing + 8
                 $0.trailing == -15
                 $0.centerY == $1.centerY
             }
             
             label.font = .systemFont(ofSize: 14)
-//            backgroundColor = .systemBackground
+            backgroundColor = .systemBackground
         }
         
         required convenience init() {
@@ -83,12 +80,20 @@ extension TreeListViewController {
             fatalError("init(coder:) has not been implemented")
         }
         
-        func config(with element: Element) {
-            let spacing = (0...element.level).reduce("") { result, _ in
-                result + "-="
+        func config(with item: ListViewItem<Element>) {
+            let element = item.element
+            let leading = CGFloat(element.level) * 30
+            iconLeadingConstraint.constant = 15 + leading
+            
+            switch item {
+            case .cell:
+                let imageConfig = UIImage.SymbolConfiguration(pointSize: 16, weight: .ultraLight, scale: .default)
+                iconImageView.image = UIImage(systemName: "doc", withConfiguration: imageConfig)
+            case .section:
+                iconImageView.image = UIImage(systemName: "folder.fill")
             }
             
-            label.text = spacing + "\(element.element)" + "state: \(element.state)"
+            label.text = "\(element.element)" + "state: \(item.element.state)"
         }
     }
     
@@ -111,27 +116,13 @@ extension TreeListViewController {
 }
 
 extension TreeListViewController: TreeListViewDelegate {
-    
-    var itemHeight: CGFloat { 50 }
+    var itemHeight: CGFloat { 60 }
     
     func treeListView<Cell>(
         _ listView: TreeListStaticView<Cell>,
-        didSelected element: Cell.Element,
+        didSelected element: ListViewItem<Cell.Element>,
         of cell: Cell
     ) where Cell : ListViewCellProtocol {
         print("tapped: \(element.element)")
-    }
-}
-
-extension Sequence {
-    func des() {
-        var iterator = makeIterator()
-        
-        var index = 0
-        
-        while let element = iterator.next() {
-            print("index: \(index), element == \(element)")
-            index += 1
-        }
     }
 }

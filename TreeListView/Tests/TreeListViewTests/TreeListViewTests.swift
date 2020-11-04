@@ -93,8 +93,8 @@ final class TreeListViewTests: XCTestCase {
     }
     
     func testTableSourceTree() {
-        struct Element: TreeElementProtocol {
-            static func == (lhs: Element, rhs: Element) -> Bool {
+        struct MockElement: TreeElementProtocol {
+            static func == (lhs: MockElement, rhs: MockElement) -> Bool {
                 lhs.id == rhs.id
             }
             
@@ -105,21 +105,21 @@ final class TreeListViewTests: XCTestCase {
             var rank: Int
             var state: BranchNodeState
             
-            static var emptyRootElement: Element {
+            static var emptyRootElement: MockElement {
                 .init(id: 0, element: 0, level: 0, superIdentifier: nil, rank: 0, state: .expand)
             }
         }
         
-        let element0 = Element(id: 0, element: 0, level: 0, superIdentifier: nil, rank: 0, state: .expand)
-        let element1 = Element(id: 1, element: 1, level: 1, superIdentifier: 0, rank: 0, state: .expand)
-        var element2 = Element(id: 2, element: 2, level: 1, superIdentifier: 0, rank: 1, state: .expand)
-        let element3 = Element(id: 3, element: 3, level: 2, superIdentifier: 1, rank: 0, state: .expand)
-        var element4 = Element(id: 4, element: 4, level: 2, superIdentifier: 1, rank: 1, state: .expand)
-        let element5 = Element(id: 5, element: 5, level: 3, superIdentifier: 2, rank: 0, state: .expand)
-        let element6 = Element(id: 6, element: 6, level: 4, superIdentifier: 4, rank: 0, state: .expand)
-        let element7 = Element(id: 7, element: 7, level: 4, superIdentifier: 5, rank: 0, state: .expand)
+        let element0 = MockElement(id: 0, element: 0, level: 0, superIdentifier: nil, rank: 0, state: .expand)
+        let element1 = MockElement(id: 1, element: 1, level: 1, superIdentifier: 0, rank: 0, state: .expand)
+        var element2 = MockElement(id: 2, element: 2, level: 1, superIdentifier: 0, rank: 1, state: .expand)
+        let element3 = MockElement(id: 3, element: 3, level: 2, superIdentifier: 1, rank: 0, state: .expand)
+        var element4 = MockElement(id: 4, element: 4, level: 2, superIdentifier: 1, rank: 1, state: .expand)
+        let element5 = MockElement(id: 5, element: 5, level: 3, superIdentifier: 2, rank: 0, state: .expand)
+        let element6 = MockElement(id: 6, element: 6, level: 4, superIdentifier: 4, rank: 0, state: .expand)
+        let element7 = MockElement(id: 7, element: 7, level: 4, superIdentifier: 5, rank: 0, state: .expand)
         
-        var elements: [Element] {
+        var elements: [MockElement] {
             [element0,
              element1,
              element2,
@@ -132,7 +132,7 @@ final class TreeListViewTests: XCTestCase {
         
         let source = TableSourceTree(source: elements)
         
-        typealias SectionElement = TreeSectionElement<Element>
+        typealias SectionElement = TreeSectionElement<MockElement>
         let sections: [SectionElement] = [
             SectionElement(element: element0, cellElements: []),
             SectionElement(element: element1, cellElements: [element3]),
@@ -144,8 +144,8 @@ final class TreeListViewTests: XCTestCase {
         XCTAssertEqual(sections, source.sections)
         
         // toggle
-        element2 = Element(id: 2, element: 2, level: 1, superIdentifier: 0, rank: 1, state: .collapse)
-        element4 = Element(id: 4, element: 4, level: 2, superIdentifier: 1, rank: 1, state: .collapse)
+        element2 = MockElement(id: 2, element: 2, level: 1, superIdentifier: 0, rank: 1, state: .collapse)
+        element4 = MockElement(id: 4, element: 4, level: 2, superIdentifier: 1, rank: 1, state: .collapse)
         
         let source2 = TableSourceTree(source: elements)
         let sections2: [SectionElement] = [

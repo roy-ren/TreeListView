@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		B028FEB92552E70F00AC4344 /* ViewWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = B028FEB82552E70F00AC4344 /* ViewWrapper.swift */; };
 		B083854E25519D2E008FF3BC /* TreeListApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B083854D25519D2E008FF3BC /* TreeListApp.swift */; };
 		B083855025519D2E008FF3BC /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B083854F25519D2E008FF3BC /* ContentView.swift */; };
 		B083855225519D2E008FF3BC /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B083855125519D2E008FF3BC /* Assets.xcassets */; };
@@ -36,6 +37,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		B028FEB82552E70F00AC4344 /* ViewWrapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewWrapper.swift; sourceTree = "<group>"; };
 		B083854A25519D2E008FF3BC /* TreeList.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TreeList.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B083854D25519D2E008FF3BC /* TreeListApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TreeListApp.swift; sourceTree = "<group>"; };
 		B083854F25519D2E008FF3BC /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -108,6 +110,7 @@
 				B083855625519D2E008FF3BC /* Info.plist */,
 				B083855325519D2E008FF3BC /* Preview Content */,
 				B0B1CBD52551A00B00B3490B /* TreeListViewController.swift */,
+				B028FEB82552E70F00AC4344 /* ViewWrapper.swift */,
 			);
 			path = TreeList;
 			sourceTree = "<group>";
@@ -281,6 +284,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B028FEB92552E70F00AC4344 /* ViewWrapper.swift in Sources */,
 				B083855025519D2E008FF3BC /* ContentView.swift in Sources */,
 				B0B1CBD62551A00B00B3490B /* TreeListViewController.swift in Sources */,
 				B083854E25519D2E008FF3BC /* TreeListApp.swift in Sources */,

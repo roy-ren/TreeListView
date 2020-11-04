@@ -22,7 +22,7 @@ protocol TreeListViewReuseViewProtocol: Registrable {
 }
 
 extension TreeListViewReuseViewProtocol {
-	func config(_ element: ContentView.Element) {
+	func config(_ element: ListViewItem<ContentView.Element>) {
 		content.config(with: element)
 	}
 }
@@ -54,6 +54,8 @@ class TreeListHeader<Content: ListViewCellProtocol>: UITableViewHeaderFooterView
 		content.addedAsContent(toSuper: contentView)
 		
 		let gesture = UITapGestureRecognizer(target: self, action: #selector(didTappedHeader))
+        gesture.numberOfTapsRequired = 1
+        gesture.numberOfTouchesRequired = 1
 		contentView.addGestureRecognizer(gesture)
 	}
 	

@@ -10,7 +10,7 @@ public protocol TreeListViewDelegate: class {
 	
 	func treeListView<Cell: ListViewCellProtocol>(
 		_ listView: TreeListStaticView<Cell>,
-		didSelected element: Cell.Element,
+        didSelected element: ListViewItem<Cell.Element>,
 		of cell: Cell
 	)
 }
@@ -24,7 +24,21 @@ public protocol ListViewCellProtocol: UIView {
 	
 	init()
 	
-	func config(with element: Element)
+	func config(with element: ListViewItem<Element>)
+}
+
+public enum ListViewItem<Element: TreeElementProtocol> {
+    case cell(_ element: Element)
+    case section(_ element: Element)
+    
+    public var element: Element {
+        switch self {
+        case .cell(let element):
+            return element
+        case .section(let element):
+            return element
+        }
+    }
 }
 
 /// 静态类型 数据源不变
@@ -70,7 +84,7 @@ public final class TreeListStaticView<ListCell: ListViewCellProtocol>: UIView, U
 		tableView.register(headerFooter: Header.self)
 		tableView.addedAsContent(toSuper: self)
 		tableView.tableFooterView = .init()
-		
+        
 		if let height = delegate?.itemHeight {
 			tableView.rowHeight = height
 			tableView.sectionHeaderHeight = height
@@ -90,7 +104,7 @@ public final class TreeListStaticView<ListCell: ListViewCellProtocol>: UIView, U
 	
 	public func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
 		let cell: Cell = tableView.dequeueReusableCell(forRowAt: indexPath)
-		cell.config(sections[indexPath.section].cellElements[indexPath.row])
+        cell.config(.cell(sections[indexPath.section].cellElements[indexPath.row]))
 		
 		return cell
 	}
@@ -100,28 +114,64 @@ public final class TreeListStaticView<ListCell: ListViewCellProtocol>: UIView, U
 		let header: Header = tableView.dequeueReusableHeaderFooter()
 
 		let element = sections[section].element
-		header.config(element)
-		header.tappedClosure = { [weak self] in
-			self?.triger(didSelected: element, of: $0)
-            self?.toggle(section: section)
+        header.config(.section(element))
+		header.tappedClosure = { [weak self] cell in
+            guard let self = self else {
+                return
+            }
+            
+            self.toggle(section: section) { [weak self] in
+                guard let self = self else {
+                    return
+                }
+                
+                if $0 { self.triger(didSelected: .section(element), of: cell) }
+            }
 		}
 		
 		return header
 	}
     
-    private func toggle(section: Int) {
-        tableView.performBatchUpdates {
-            let editChange = dataSourceTree.toggle(section: section)
+    private func toggle(section: Int, completion: @escaping (Bool) -> Void) {
+        func update(_ editChange: TableSourceTree<Element>.EditChange) {
+            print("start performBatchUpdates" + "section: \(self.sections.count)")
             
-            switch editChange {
-            case .delete(let change):
-                tableView.deleteRows(at: change.changes.indexPaths, with: .fade)
-                tableView.deleteSections(change.changes.indexSet, with: .fade)
-            case .insert(let change):
-                tableView.insertRows(at: change.changes.indexPaths, with: .fade)
-                tableView.insertSections(change.changes.indexSet, with: .fade)
-            case .none:
+            tableView.performBatchUpdates {
+                switch editChange {
+                case .delete(let change):
+                    tableView.deleteRows(at: change.changes.indexPaths, with: .fade)
+                    tableView.deleteSections(change.changes.indexSet, with: .fade)
+                case .insert(let change):
+                    tableView.insertRows(at: change.changes.indexPaths, with: .fade)
+                    tableView.insertSections(change.changes.indexSet, with: .fade)
+                case .none:
+                    return
+                }
+            } completion: { _ in
+                self.tableView.reloadData()
+                
+                print("after performBatchUpdates" + "section: \(self.sections.count)")
+                self.sections.forEach {
+                    let spacing = (0...$0.element.level).reduce("") { r, _ in r + "    " }
+                    
+                    print(spacing + "sion: \($0.element.element)")
+                    
+                    $0.cellElements.forEach { element in
+                        print(spacing + "cell: \(element.element)")
+                    }
+                }
+            }
+        }
+        
+        dataSourceTree.toggle(section: section) { change in
+            if case .none = change {
+                completion(false)
                 return
+            }
+            
+            DispatchQueue.main.async {
+                update(change)
+                completion(true)
             }
         }
     }
@@ -131,22 +181,10 @@ public final class TreeListStaticView<ListCell: ListViewCellProtocol>: UIView, U
 		tableView.deselectRow(at: indexPath, animated: true)
 		guard let cell = tableView.cellForRow(at: indexPath) as? Cell else { return }
 		let element = sections[indexPath.section].cellElements[indexPath.row]
-		triger(didSelected: element, of: cell.content)
+        triger(didSelected: .cell(element), of: cell.content)
 	}
 	
-	private func triger(didSelected item: Element, of cell: ListCell) {
+	private func triger(didSelected item: ListViewItem<Element>, of cell: ListCell) {
 		delegate?.treeListView(self, didSelected: item, of: cell)
-		
-//		if stateToggledEnabled {
-//			section = sections.removeLast()
-//			tableView.deleteSections([sections.count], with: .fade)
-//		} else {
-//			if let section = section {
-//				sections.append(section)
-//				tableView.insertSections([sections.count - 1], with: .fade)
-//			}
-//		}
-//
-//		stateToggledEnabled.toggle()
 	}
 }
