@@ -11,7 +11,7 @@ struct ContentView: View {
     var body: some View {
         NavigationView {
             List(Feature.allCases) { feature in
-                NavigationLink(destination: ListViewControllerWrapper()) {
+                NavigationLink(destination: ListViewControllerWrapper<TreeListViewController>()) {
                     Text(feature.rawValue)
                         .fontWeight(.bold)
                 }

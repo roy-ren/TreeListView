@@ -10,8 +10,8 @@ import TreeListView
 import RLayoutKit
 import SwiftUI
 
-struct ListViewControllerWrapper: UIViewControllerRepresentable {
-    typealias UIViewControllerType = TreeListViewController
+struct ListViewControllerWrapper<Controller: UIViewController>: UIViewControllerRepresentable {
+    typealias UIViewControllerType = Controller
 
     func makeUIViewController(context: UIViewControllerRepresentableContext<ListViewControllerWrapper>) -> ListViewControllerWrapper.UIViewControllerType {
         .init()
