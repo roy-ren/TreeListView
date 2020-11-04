@@ -40,9 +40,7 @@ public final class TreeListStaticView<ListCell: ListViewCellProtocol>: UIView, U
 	
 	private typealias DataSource = TableSourceTree<Element>
     private var dataSourceTree: DataSource
-//	private var sections: [DataSource.Section] { dataSourceTree.sections }
-	lazy var sections = dataSourceTree.sections
-	private var section: DataSource.Section?
+	private var sections: [DataSource.Section] { dataSourceTree.sections }
 	
 	private typealias Cell = TreeListCell<ListCell>
 	private typealias Header = TreeListHeader<ListCell>
@@ -105,12 +103,28 @@ public final class TreeListStaticView<ListCell: ListViewCellProtocol>: UIView, U
 		header.config(element)
 		header.tappedClosure = { [weak self] in
 			self?.triger(didSelected: element, of: $0)
-            self?.dataSourceTree.toggle(sectionAt: section)
-            self?.tableView.reloadData()
+            self?.toggle(section: section)
 		}
 		
 		return header
 	}
+    
+    private func toggle(section: Int) {
+        tableView.performBatchUpdates {
+            let editChange = dataSourceTree.toggle(section: section)
+            
+            switch editChange {
+            case .delete(let change):
+                tableView.deleteRows(at: change.changes.indexPaths, with: .fade)
+                tableView.deleteSections(change.changes.indexSet, with: .fade)
+            case .insert(let change):
+                tableView.insertRows(at: change.changes.indexPaths, with: .fade)
+                tableView.insertSections(change.changes.indexSet, with: .fade)
+            case .none:
+                return
+            }
+        }
+    }
 	
 	public func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
 		

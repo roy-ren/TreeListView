@@ -7,7 +7,7 @@
 
 import Foundation
 
-public enum TreeNodeState {
+public enum BranchNodeState {
 	/// 展开状态
 	case expand
 	/// 闭合状态
@@ -20,9 +20,9 @@ public enum TreeNodeState {
 
 public enum TreeNode<Element> {
 	case leaf(data: Element)
-	indirect case branch(data: Element, subNodes: [Self], state: TreeNodeState)
+	indirect case branch(data: Element, subNodes: [Self], state: BranchNodeState)
 	
-	public init(data: Element, subNodes: [Self]? = nil, state: TreeNodeState = .expand) {
+	public init(data: Element, subNodes: [Self]? = nil, state: BranchNodeState = .expand) {
 		if let nodes = subNodes {
 			self = .branch(data: data, subNodes: nodes, state: state)
 		} else {
