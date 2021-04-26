@@ -129,35 +129,43 @@ public final class TreeListStaticView<ListCell: ListViewCellProtocol>: UIView, U
 	}
     
     private func toggle(section: Int, completion: @escaping (Bool) -> Void) {
-        func update(_ editChange: TableSourceTree<Element>.EditChange) {
-            print("start performBatchUpdates" + "section: \(self.sections.count)")
-            
-            tableView.performBatchUpdates {
-                switch editChange {
-                case .delete(let change):
-                    tableView.deleteRows(at: change.changes.indexPaths, with: .fade)
-                    tableView.deleteSections(change.changes.indexSet, with: .fade)
-                case .insert(let change):
-                    tableView.insertRows(at: change.changes.indexPaths, with: .fade)
-                    tableView.insertSections(change.changes.indexSet, with: .fade)
-                case .none:
-                    return
+		func update(_ editChange: EditChange) {
+			print("start performBatchUpdates" + "section: \(self.sections.count)")
+
+			tableView.performBatchUpdates {
+                if !editChange.removeIndexPaths.isEmpty {
+                    tableView.deleteRows(at: editChange.removeIndexPaths, with: .fade)
                 }
-            } completion: { _ in
-                self.tableView.reloadData()
                 
-                print("after performBatchUpdates" + "section: \(self.sections.count)")
-                self.sections.forEach {
-                    let spacing = (0...$0.element.level).reduce("") { r, _ in r + "    " }
-                    
-                    print(spacing + "sion: \($0.element.element)")
-                    
-                    $0.cellElements.forEach { element in
-                        print(spacing + "cell: \(element.element)")
-                    }
+                if !editChange.removeIndexSet.isEmpty {
+                    tableView.deleteSections(editChange.removeIndexSet, with: .fade)
                 }
-            }
-        }
+                
+                if !editChange.insertIndexPaths.isEmpty {
+                    tableView.insertRows(at: editChange.insertIndexPaths, with: .fade)
+                }
+                
+                if !editChange.insertIndexSet.isEmpty {
+                    tableView.insertSections(editChange.insertIndexSet, with: .fade)
+                }
+                
+			} completion: { isFinished in
+                if isFinished {
+                    self.tableView.reloadData()
+                }
+
+				print("after performBatchUpdates" + "section: \(self.sections.count)")
+				self.sections.forEach {
+					let spacing = (0...$0.element.level).reduce("") { r, _ in r + "    " }
+
+					print(spacing + "section: \($0.element.element)")
+
+					$0.cellElements.forEach { element in
+						print(spacing + "cell: \(element.element)")
+					}
+				}
+			}
+		}
         
         dataSourceTree.toggle(section: section) { change in
             if case .none = change {

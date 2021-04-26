@@ -62,12 +62,7 @@ public class TableSourceTree<Element: TreeElementProtocol> {
     
     private var _inToggleChangeCaculating = false
     private let queue = DispatchQueue(label: "com.royite.inToggleChangeCaculating.access")
-    
-//    private var inToggleChangeCaculating: Bool {
-//        set { queue.async { self._inToggleChangeCaculating = newValue } }
-//        get { queue.sync { _inToggleChangeCaculating } }
-//    }
-	
+
 	public init(source list: [Element]) {
 		
 		typealias ID = Element.ID
@@ -105,31 +100,22 @@ public class TableSourceTree<Element: TreeElementProtocol> {
 	}
 }
 
+public struct EditChange: Equatable {
+	static let none = EditChange(
+		insertIndexPaths: [],
+		removeIndexPaths: [],
+		insertIndexSet: .init(),
+		removeIndexSet: .init()
+	)
+
+	let insertIndexPaths: [IndexPath]
+	let removeIndexPaths: [IndexPath]
+	let insertIndexSet: IndexSet
+	let removeIndexSet: IndexSet
+}
+
 // MARK: - Toggle for expand
 extension TableSourceTree {
-    public enum EditChange {
-        case none
-		case insert(change: Change)
-		case delete(change: Change)
-			
-        public enum Change {
-			case cell(indexPaths: [IndexPath])
-			case section(indexSet: IndexSet)
-            case total(indexSet: IndexSet, indexPaths: [IndexPath])
-            
-            var changes: (indexSet: IndexSet, indexPaths: [IndexPath]) {
-                switch self {
-                case .cell(let indexPaths):
-                    return (.init(), indexPaths)
-                case .section(let indexSet):
-                    return (indexSet, [])
-                case let .total(indexSet, indexPaths):
-                    return (indexSet, indexPaths)
-                }
-            }
-		}
-	}
-	
     public func toggle(section: Int, completion: @escaping (EditChange) -> Void) {
         func caculateChange() -> EditChange {
             // 1. search node
@@ -146,9 +132,16 @@ extension TableSourceTree {
             
             let result = toggleNode(for: pathIdentifiers, in: root)
             root = result.node
-            sections = root.emptyRootSections(isOnlyExpand: true)
-
-            return generateChange(for: result.destinationNode, at: section)
+            
+            switch result.destinationNode.state {
+            case .expand:
+                sections = root.emptyRootSections(isOnlyExpand: true)
+                return generateChange(for: result.destinationNode, at: section)
+            case .collapse:
+                let change = generateChange(for: result.destinationNode, at: section)
+                sections = root.emptyRootSections(isOnlyExpand: true)
+                return change
+            }
         }
         
         queue.async { [unowned self] in
@@ -187,8 +180,8 @@ extension TableSourceTree {
         
         let destinationNode: Node
         if currentPath.isEmpty {
-            destinationNode = subNode
             subNode.toggle()
+            destinationNode = subNode
         } else {
             let result = toggleNode(for: currentPath, in: subNode)
             subNode = result.node
@@ -199,42 +192,79 @@ extension TableSourceTree {
         
         return (node, destinationNode)
     }
-    
-    private func generateChange(for node: Node, at section: Int) -> EditChange {
-        guard case .branch(_, _, let state) = node else {
-            return .none
-        }
-        
-        var node = node
-        if .collapse == state { node.toggle() }
-        
-        let sections = node.generateSections(isOnlyExpand: true)
-        
-        guard let sectionElement = sections.first else {
-            return .none
-        }
-        
-        var change: EditChange.Change
-        
-        let indexPaths = (0..<sectionElement.cellElements.count).map {
-            IndexPath(row: $0, section: section)
-        }
-        
-        switch sections.count {
-        case 1:
-            guard !indexPaths.isEmpty else { return .none }
-            change = .cell(indexPaths: indexPaths)
-        default:
-            let indexSet = IndexSet((1..<sections.count).map { $0 + section })
-            if indexPaths.isEmpty {
-                change = .section(indexSet: indexSet)
-            } else {
-                change = .total(indexSet: indexSet, indexPaths: indexPaths)
-            }
-        }
-        
-        return .collapse == state ? .insert(change: change) : .delete(change: change)
-    }
+
+	/// 计算一个节点state发生改变后，产生的变动
+	/// - Parameters:
+	///   - node: state 发生变动的节点
+	///   - section: 改节点位于
+	/// - Returns: 该节点产生的变动（所有涉及到的索引）
+	private func generateChange(
+		for node: Node,
+		at section: Int
+	) -> EditChange {
+		guard case .branch(_, _, let state) = node else {
+			return .none
+		}
+
+		var node = node
+		// 如果是闭合状态，则需要先展开，用以计算索引
+		if .collapse == state { node.toggle() }
+
+        // 该节点对应的sections
+		let currentNodeSections = node.generateSections(isOnlyExpand: true)
+
+		// 该节点的section对应的信息
+		guard let currentSection = currentNodeSections.first else {
+			return .none
+		}
+
+        // 该节点对应section中的索引
+		var subIndexPaths = [IndexPath]()
+        // 非该节点的需要发生改变的索引
+		var extraIndexPaths = [IndexPath]()
+        // 改节点的子section节点
+		var subSectionIndexSet = IndexSet()
+
+		// 第一个section中所有属于该section的Cell的indexPath
+		subIndexPaths = currentSection.cellElements
+			.enumerated()
+			.map { offset, _ in IndexPath(row: offset, section: section) }
+
+		switch currentNodeSections.count {
+		case 1:
+			guard !subIndexPaths.isEmpty else { return .none }
+		default:
+            let count = currentNodeSections.count
+            let lastSectionBeforeChange = sections[section + count - 1]
+            
+            lastSectionBeforeChange.cellElements
+                .filter { item in
+                    let id = item.superIdentifier
+                    return id != lastSectionBeforeChange.id && id != currentSection.id
+                }
+                .enumerated()
+                .forEach { offset, element in
+                    extraIndexPaths.append(.init(row: offset, section: section))
+                }
+            
+            
+            subSectionIndexSet = IndexSet((1..<currentNodeSections.count).map { $0 + section })
+		}
+
+		return .expand == state
+			? .init(
+				insertIndexPaths: subIndexPaths,
+				removeIndexPaths: extraIndexPaths,
+				insertIndexSet: subSectionIndexSet,
+				removeIndexSet: .init()
+			)
+			: .init(
+				insertIndexPaths: extraIndexPaths,
+				removeIndexPaths: subIndexPaths,
+				insertIndexSet: .init(),
+				removeIndexSet: subSectionIndexSet
+			)
+	}
 	
 	/// 在指定node中根据数据的特性superIdentifier的数组查找节点
 	/// - Parameters:
@@ -265,7 +295,6 @@ extension TreeNode where Element: TreeElementProtocol {
 	/// - Parameter flag: 是否只计算展开项
 	/// - Returns: 对应的 sections
 	public func emptyRootSections(isOnlyExpand flag: Bool = false) -> [Section] {
-//        generateSections(isOnlyExpand: flag)
 		let sections = generateSections(isOnlyExpand: flag)
 		guard sections.count > 1 else { return [] }
 		return sections.suffix(sections.count - 1)

@@ -51,6 +51,15 @@ public indirect enum TreeNode<Element> {
 			return nodes
 		}
 	}
+    
+    public var state: BranchNodeState {
+        switch self {
+        case .branch(_, _, let state):
+            return state
+        default:
+            return .expand
+        }
+    }
 	
 	public var subNodeCount: Int {
 		subNodes?.count ?? 0

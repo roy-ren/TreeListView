@@ -16,17 +16,16 @@ class TreeListViewController: UIViewController {
     
     static var elements: [Element] = [
         .init(id: 0, element: 0, level: 0, superIdentifier: nil, rank: 0, state: .expand),
-        .init(id: 10, element: 10, level: 0, superIdentifier: nil, rank: 1, state: .expand),
         .init(id: 1, element: 1, level: 1, superIdentifier: 0, rank: 0, state: .expand),
+        .init(id: 11, element: 11, level: 2, superIdentifier: 1, rank: 0, state: .expand),
+        .init(id: 12, element: 12, level: 2, superIdentifier: 1, rank: 1, state: .expand),
+        .init(id: 121, element: 121, level: 3, superIdentifier: 12, rank: 0, state: .expand),
+        .init(id: 13, element: 13, level: 2, superIdentifier: 1, rank: 2, state: .expand),
         .init(id: 2, element: 2, level: 1, superIdentifier: 0, rank: 1, state: .expand),
-        .init(id: 3, element: 3, level: 2, superIdentifier: 1, rank: 0, state: .expand),
-        .init(id: 4, element: 4, level: 2, superIdentifier: 1, rank: 1, state: .expand),
-        .init(id: 14, element: 14, level: 2, superIdentifier: 1, rank: 2, state: .expand),
-        .init(id: 15, element: 15, level: 2, superIdentifier: 1, rank: 3, state: .expand),
-        .init(id: 144, element: 144, level: 3, superIdentifier: 14, rank: 0, state: .expand),
-        .init(id: 5, element: 5, level: 2, superIdentifier: 2, rank: 0, state: .expand),
-        .init(id: 6, element: 6, level: 3, superIdentifier: 4, rank: 0, state: .expand),
-        .init(id: 7, element: 7, level: 3, superIdentifier: 5, rank: 0, state: .expand)
+        .init(id: 21, element: 21, level: 2, superIdentifier: 2, rank: 0, state: .expand),
+        .init(id: 211, element: 211, level: 3, superIdentifier: 21, rank: 0, state: .expand),
+        .init(id: 3, element: 3, level: 1, superIdentifier: 0, rank: 2, state: .expand),
+        .init(id: 100, element: 100, level: 0, superIdentifier: nil, rank: 0, state: .expand)
     ]
         
     init() {
@@ -127,7 +126,6 @@ extension TreeListViewController: TreeListViewDelegate {
         didSelected element: ListViewItem<Cell.Element>,
         of cell: Cell
     ) where Cell : ListViewCellProtocol {
-        print("tapped: \(element.element)")
-        
+//        print("tapped: \(element.element)")
     }
 }
