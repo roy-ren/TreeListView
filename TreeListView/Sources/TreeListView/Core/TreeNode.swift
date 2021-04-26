@@ -18,9 +18,9 @@ public enum BranchNodeState {
 	}
 }
 
-public enum TreeNode<Element> {
+public indirect enum TreeNode<Element> {
 	case leaf(data: Element)
-	indirect case branch(data: Element, subNodes: [Self], state: BranchNodeState)
+	case branch(data: Element, subNodes: [Self], state: BranchNodeState)
 	
 	public init(data: Element, subNodes: [Self]? = nil, state: BranchNodeState = .expand) {
 		if let nodes = subNodes {
@@ -40,7 +40,7 @@ public enum TreeNode<Element> {
 	}
 	
 	public var hasSubNodes: Bool {
-		if case .branch = self { return true } else { return false }
+		nil != subNodes
 	}
 	
 	public var subNodes: [TreeNode]? {
@@ -53,12 +53,7 @@ public enum TreeNode<Element> {
 	}
 	
 	public var subNodeCount: Int {
-		switch self {
-		case .leaf:
-			return 0
-		case .branch(_, let subNodes, _):
-			return subNodes.count
-		}
+		subNodes?.count ?? 0
 	}
 	
 	public mutating func toggle() {

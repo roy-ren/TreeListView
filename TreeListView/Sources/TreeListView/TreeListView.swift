@@ -116,14 +116,10 @@ public final class TreeListStaticView<ListCell: ListViewCellProtocol>: UIView, U
 		let element = sections[section].element
         header.config(.section(element))
 		header.tappedClosure = { [weak self] cell in
-            guard let self = self else {
-                return
-            }
+            guard let self = self else { return }
             
             self.toggle(section: section) { [weak self] in
-                guard let self = self else {
-                    return
-                }
+                guard let self = self else { return }
                 
                 if $0 { self.triger(didSelected: .section(element), of: cell) }
             }

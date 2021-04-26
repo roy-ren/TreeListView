@@ -36,7 +36,10 @@ public protocol TreeElementProtocol: Identifiable, Equatable {
 }
 
 public struct TreeSectionElement<Element: TreeElementProtocol>: Identifiable, Equatable {
-	public static func == (lhs: TreeSectionElement<Element>, rhs: TreeSectionElement<Element>) -> Bool {
+	public static func == (
+		lhs: TreeSectionElement<Element>,
+		rhs: TreeSectionElement<Element>
+	) -> Bool {
 		lhs.id == rhs.id
 			&& lhs.element == rhs.element
 			&& lhs.cellElements == rhs.cellElements
@@ -90,8 +93,8 @@ public class TableSourceTree<Element: TreeElementProtocol> {
 					}
 			}
 		
-		if let node = subNodesInfo[.none]?.first {
-			root = .branch(data: .emptyRootElement, subNodes: [node], state: .expand)
+		if let nodes = subNodesInfo[.none] {
+			root = .branch(data: .emptyRootElement, subNodes: nodes, state: .expand)
 		} else if let nodes = subNodesInfo.values.first {
 			root = .branch(data: .emptyRootElement, subNodes: nodes, state: .expand)
 		} else {
@@ -262,6 +265,7 @@ extension TreeNode where Element: TreeElementProtocol {
 	/// - Parameter flag: 是否只计算展开项
 	/// - Returns: 对应的 sections
 	public func emptyRootSections(isOnlyExpand flag: Bool = false) -> [Section] {
+//        generateSections(isOnlyExpand: flag)
 		let sections = generateSections(isOnlyExpand: flag)
 		guard sections.count > 1 else { return [] }
 		return sections.suffix(sections.count - 1)
@@ -282,24 +286,34 @@ extension TreeNode where Element: TreeElementProtocol {
 			case .leaf(let element):
 				return [.cell(element: element)]
 			case let .branch(element, subNodes, state):
+                
 				if isOnlyExpand, case .collapse = state {
 					return [.section(element: element, cellElements: [])]
 				}
                 
 				var elements = [Element]()
-					
-				let subNodeSectionDatas: [NodeElementData] = subNodes
-					.flatMap(generate(node:))
-					.compactMap {
-						if case let .cell(element) = $0 {
-							elements.append(element)
-							return nil
-						} else {
-							return $0
-						}
-					}
-				
-				return [.section(element: element, cellElements: elements)] + subNodeSectionDatas
+                
+                let subNodeSectionDatas: [NodeElementData] = subNodes
+                    .flatMap(generate(node:))
+                    .reversed()
+                    .compactMap {
+                        switch $0 {
+                        case .cell(let element):
+                            elements.append(element)
+                            return nil
+                        case let .section(element, subs):
+                            let section = NodeElementData.section(
+                                element: element,
+                                cellElements: subs + Array(elements.reversed())
+                            )
+                            elements.removeAll()
+                            return section
+                        }
+                    }
+                    .reversed()
+                
+                return [.section(element: element, cellElements: elements.reversed())]
+                    + subNodeSectionDatas
 			}
 		}
 		

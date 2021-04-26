@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		B028FEB92552E70F00AC4344 /* ViewWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = B028FEB82552E70F00AC4344 /* ViewWrapper.swift */; };
+		B05C363A25A2FA5300BEF6D8 /* CRMDetailHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = B05C363925A2FA5300BEF6D8 /* CRMDetailHeader.swift */; };
 		B083854E25519D2E008FF3BC /* TreeListApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B083854D25519D2E008FF3BC /* TreeListApp.swift */; };
 		B083855025519D2E008FF3BC /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B083854F25519D2E008FF3BC /* ContentView.swift */; };
 		B083855225519D2E008FF3BC /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B083855125519D2E008FF3BC /* Assets.xcassets */; };
@@ -38,6 +39,7 @@
 
 /* Begin PBXFileReference section */
 		B028FEB82552E70F00AC4344 /* ViewWrapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewWrapper.swift; sourceTree = "<group>"; };
+		B05C363925A2FA5300BEF6D8 /* CRMDetailHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CRMDetailHeader.swift; sourceTree = "<group>"; };
 		B083854A25519D2E008FF3BC /* TreeList.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TreeList.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B083854D25519D2E008FF3BC /* TreeListApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TreeListApp.swift; sourceTree = "<group>"; };
 		B083854F25519D2E008FF3BC /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -80,6 +82,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		B05C363825A2FA3200BEF6D8 /* CRMHeader */ = {
+			isa = PBXGroup;
+			children = (
+				B05C363925A2FA5300BEF6D8 /* CRMDetailHeader.swift */,
+			);
+			path = CRMHeader;
+			sourceTree = "<group>";
+		};
 		B083854125519D2E008FF3BC = {
 			isa = PBXGroup;
 			children = (
@@ -111,6 +121,7 @@
 				B083855325519D2E008FF3BC /* Preview Content */,
 				B0B1CBD52551A00B00B3490B /* TreeListViewController.swift */,
 				B028FEB82552E70F00AC4344 /* ViewWrapper.swift */,
+				B05C363825A2FA3200BEF6D8 /* CRMHeader */,
 			);
 			path = TreeList;
 			sourceTree = "<group>";
@@ -286,6 +297,7 @@
 			files = (
 				B028FEB92552E70F00AC4344 /* ViewWrapper.swift in Sources */,
 				B083855025519D2E008FF3BC /* ContentView.swift in Sources */,
+				B05C363A25A2FA5300BEF6D8 /* CRMDetailHeader.swift in Sources */,
 				B0B1CBD62551A00B00B3490B /* TreeListViewController.swift in Sources */,
 				B083854E25519D2E008FF3BC /* TreeListApp.swift in Sources */,
 			);
