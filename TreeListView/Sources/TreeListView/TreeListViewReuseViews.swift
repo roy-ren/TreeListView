@@ -69,7 +69,6 @@ class TreeListHeader<
 	
 	@objc
     func didTappedHeader(_ gesture: UITapGestureRecognizer) {
-        print("gesture: \(gesture)")
 		tappedClosure?(content)
     }
 }

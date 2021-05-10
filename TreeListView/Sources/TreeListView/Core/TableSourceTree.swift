@@ -23,16 +23,23 @@ public protocol TreeElementProtocol: Identifiable, Equatable {
 	/// 层级深度：最外为 0
 	var level: Int { get }
 	
-	/// 父节点的 id
-	var superIdentifier: ID? { get }
+	/// 父节点的 id, 最外层展示的数据的 superIdentifier 为 invisableRoot 的id
+	var superIdentifier: ID { get }
 	
 	/// 在同级中的排序
 	var rank: Int { get }
 	
-	/// 展开状态
+	/// 初始展开状态
 	var state: BranchNodeState { get }
 	
-	static var emptyRootElement: Self { get }
+    /// 树根节点数据
+	static var invisableRoot: Self { get }
+}
+
+public extension TreeElementProtocol {
+    static var invisableRootIdentifier: ID {
+        invisableRoot.id
+    }
 }
 
 public struct TreeSectionElement<Element: TreeElementProtocol>: Identifiable, Equatable {
@@ -47,9 +54,10 @@ public struct TreeSectionElement<Element: TreeElementProtocol>: Identifiable, Eq
 	
 	public var element: Element
 	public var cellElements: [Element]
+    public var state: BranchNodeState
 	
 	public var id: Element.ID { element.id }
-	public var superSectionID: Element.ID? { element.superIdentifier }
+	public var superSectionID: Element.ID { element.superIdentifier }
 }
 
 public class TableSourceTree<Element: TreeElementProtocol> {
@@ -67,33 +75,70 @@ public class TableSourceTree<Element: TreeElementProtocol> {
 		
 		typealias ID = Element.ID
 		// superID: subNodes
-		var subNodesInfo = [ID?: [Node]]()
-		
-		Dictionary(grouping: list, by: { $0.level })
-			.sorted { $0.key > $1.key }		// 先从level大的开始，即树的叶子开始
-			.forEach{ _, elements in
-				Dictionary(grouping: elements, by: { $0.superIdentifier })
-					.forEach { superID, elements in
-						let nodes: [Node] = elements
-							.sorted { $0.rank < $1.rank }
-							.map { element -> Node in
-								if let subNodes = subNodesInfo.removeValue(forKey: element.id) {
-									return Node.branch(data: element, subNodes: subNodes, state: element.state)
-								} else {
-									return Node.leaf(data: element)
-								}
-							}
-						
-						subNodesInfo.updateValue(nodes, forKey: superID)
-					}
-			}
-		
-		if let nodes = subNodesInfo[.none] {
-			root = .branch(data: .emptyRootElement, subNodes: nodes, state: .expand)
-		} else if let nodes = subNodesInfo.values.first {
-			root = .branch(data: .emptyRootElement, subNodes: nodes, state: .expand)
+		var leafNodes = [ID: [Node]]()
+
+        Dictionary(grouping: list, by: { $0.superIdentifier })
+            .forEach { superID, elements in
+                let nodes: [Node] = elements
+                    .sorted { $0.rank < $1.rank }
+                    .map { element -> Node in
+                        Node.leaf(data: element)
+                    }
+
+                leafNodes.updateValue(nodes, forKey: superID)
+            }
+        
+//        var stack = Stack<Node>()
+//        if !list.isEmpty {
+//            // 最外层数据的super id 为nil
+//            stack.push(item: .leaf(data: .invisableRoot))
+//        }
+//
+//        var constuctedSubNodes = [ID: [Node]]()
+//
+//        while let node = stack.top {
+//            if nil == constuctedSubNodes[node.data.id], let sub = leafNodes[node.data.id] {
+//                stack.push(items: sub)
+//                continue
+//            } else {
+//                stack.pop()
+//                var superConstructedNodes = constuctedSubNodes[node.data.superIdentifier] ?? []
+//
+//                if let nodes = constuctedSubNodes[node.data.id] {
+//                    let constructedNode = Node.branch(
+//                        data: node.data,
+//                        subNodes: nodes.reversed(),
+//                        state: node.data.state
+//                    )
+//                    superConstructedNodes.append(constructedNode)
+//                } else {
+//                    superConstructedNodes.append(node)
+//                }
+//
+//                constuctedSubNodes.updateValue(superConstructedNodes, forKey: node.data.superIdentifier)
+//            }
+//        }
+//
+//        if let node = constuctedSubNodes[Element.invisableRoot.superIdentifier]?.first {
+//            root = node
+//        } else {
+//            root = .leaf(data: .invisableRoot)
+//        }
+        
+        func construct(node: Node) -> Node {
+            guard let subNodes = leafNodes[node.data.id] else {
+                return node
+            }
+
+            let constructedSubNodes = subNodes.map(construct(node:))
+
+            return .branch(data: node.data, subNodes: constructedSubNodes, state: node.state)
+        }
+
+        if let nodes = leafNodes[Element.invisableRootIdentifier] {
+            root = .branch(data: .invisableRoot, subNodes: nodes.map(construct(node:)), state: .expand)
 		} else {
-			root = .leaf(data: .emptyRootElement)
+			root = .leaf(data: .invisableRoot)
 		}
 		
 		sections = root.emptyRootSections(isOnlyExpand: true)
@@ -116,8 +161,13 @@ public struct EditChange: Equatable {
 
 // MARK: - Toggle for expand
 extension TableSourceTree {
-    public func toggle(section: Int, completion: @escaping (EditChange) -> Void) {
-        func caculateChange() -> EditChange {
+    public typealias ToogleTreeResult = (change: EditChange, newState: BranchNodeState)
+    public func toggle(
+        section: Int,
+        completion: @escaping (ToogleTreeResult) -> Void
+    ) {
+        
+        func toggle() -> ToggleResult {
             // 1. search node
             // 每个section的superSection一定在它的前面
             let secitonInfos = Dictionary(grouping: sections[0..<section], by: { $0.id })
@@ -125,12 +175,15 @@ extension TableSourceTree {
             var pathIdentifiers = [sections[section].id]
             var element: Element? = sections[section].element
             
-            while let id = element?.superIdentifier {
+            while let id = element?.superIdentifier, id != Element.invisableRootIdentifier {
                 pathIdentifiers.append(id)
                 element = secitonInfos[id]?.first?.element
             }
             
-            let result = toggleNode(for: pathIdentifiers, in: root)
+            return toggleNode(for: pathIdentifiers, in: root)
+        }
+        
+        func caculateChange(of result: ToggleResult) -> EditChange {
             root = result.node
             
             switch result.destinationNode.state {
@@ -145,15 +198,15 @@ extension TableSourceTree {
         }
         
         queue.async { [unowned self] in
+            let result = toggle()
+            let state = result.destinationNode.state
+            
             guard !self._inToggleChangeCaculating else {
-                print("skip toggle section: \([sections[section].id]) count: \(sections.count)")
-                completion(.none)
+                completion((.none, state))
                 return
             }
-            
-//            print("toggle section: \([sections[section].id]) count: \(sections.count)")
-            completion(caculateChange())
-//            print("toggleedd section: \([sections[section].id]) count: \(sections.count)")
+
+            completion((caculateChange(of: result), state))
             self._inToggleChangeCaculating = false
         }
 	}
@@ -301,7 +354,7 @@ extension TreeNode where Element: TreeElementProtocol {
 	}
 	
 	private enum NodeElementData {
-		case section(element: Element, cellElements: [Element])
+        case section(element: Element, cellElements: [Element], state: BranchNodeState)
 		case cell(element: Element)
 	}
 	
@@ -317,7 +370,7 @@ extension TreeNode where Element: TreeElementProtocol {
 			case let .branch(element, subNodes, state):
                 
 				if isOnlyExpand, case .collapse = state {
-					return [.section(element: element, cellElements: [])]
+                    return [.section(element: element, cellElements: [], state: state)]
 				}
                 
 				var elements = [Element]()
@@ -330,10 +383,11 @@ extension TreeNode where Element: TreeElementProtocol {
                         case .cell(let element):
                             elements.append(element)
                             return nil
-                        case let .section(element, subs):
+                        case let .section(element, subs, state):
                             let section = NodeElementData.section(
                                 element: element,
-                                cellElements: subs + Array(elements.reversed())
+                                cellElements: subs + Array(elements.reversed()),
+                                state: state
                             )
                             elements.removeAll()
                             return section
@@ -341,17 +395,18 @@ extension TreeNode where Element: TreeElementProtocol {
                     }
                     .reversed()
                 
-                return [.section(element: element, cellElements: elements.reversed())]
+                return [.section(element: element, cellElements: elements.reversed(), state: state)]
                     + subNodeSectionDatas
 			}
 		}
 		
-		return generate(node: self).compactMap {
-			if case let .section(element, elements) = $0 {
-				return Section(element: element, cellElements: elements)
-			} else {
-				return nil
-			}
-		}
-	}
+        return generate(node: self)
+            .compactMap {
+                if case let .section(element, elements, state) = $0 {
+                    return Section(element: element, cellElements: elements, state: state)
+                } else {
+                    return nil
+                }
+            }
+    }
 }

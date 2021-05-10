@@ -12,24 +12,24 @@ import SwiftUI
 
 class TreeListViewController: UIViewController {
     
-    private let listView: TreeListStaticView<Cell>
+    private let listView = TreeListStaticView<TreeListViewController>()
     
-    static var elements: [Element] = [
-        .init(id: 0, element: 0, level: 0, superIdentifier: nil, rank: 0, state: .expand),
+    let elements: [Element] = [
+        .init(id: 0, element: 0, level: 0, superIdentifier: Element.invisableRootIdentifier, rank: 0, state: .expand),
         .init(id: 1, element: 1, level: 1, superIdentifier: 0, rank: 0, state: .expand),
         .init(id: 11, element: 11, level: 2, superIdentifier: 1, rank: 0, state: .expand),
         .init(id: 12, element: 12, level: 2, superIdentifier: 1, rank: 1, state: .expand),
         .init(id: 121, element: 121, level: 3, superIdentifier: 12, rank: 0, state: .expand),
         .init(id: 13, element: 13, level: 2, superIdentifier: 1, rank: 2, state: .expand),
         .init(id: 2, element: 2, level: 1, superIdentifier: 0, rank: 1, state: .expand),
-        .init(id: 21, element: 21, level: 2, superIdentifier: 2, rank: 0, state: .expand),
+        .init(id: 20, element: 20, level: 2, superIdentifier: 2, rank: 0, state: .expand),
+        .init(id: 21, element: 21, level: 2, superIdentifier: 2, rank: 1, state: .expand),
         .init(id: 211, element: 211, level: 3, superIdentifier: 21, rank: 0, state: .expand),
-        .init(id: 3, element: 3, level: 1, superIdentifier: 0, rank: 2, state: .expand),
-        .init(id: 100, element: 100, level: 0, superIdentifier: nil, rank: 0, state: .expand)
+//        .init(id: 3, element: 3, level: 1, superIdentifier: 0, rank: 2, state: .expand),
+//        .init(id: 100, element: 100, level: 0, superIdentifier: Element.invisableRootIdentifier, rank: 1, state: .expand)
     ]
         
     init() {
-        listView = .init(elements: Self.elements)
         super.init(nibName: nil, bundle: nil)
     }
     
@@ -42,10 +42,24 @@ class TreeListViewController: UIViewController {
         view.backgroundColor = .white
         
         listView.delegate = self
+        
         listView.rl.added(to: view) {
             $0.edges == $1.edges
         }
     }
+}
+
+extension TreeListViewController: TreeListViewDelegate {
+    func treeListView(didSelected element: ListViewItem<Element>, of cell: Cell) {
+        switch element {
+        case .cell(let item):
+            print("cell item: \(item.element)")
+        case let .section(item, newState):
+            print("section item: \(item.element), newState: \(newState)")
+        }
+    }
+ 
+    var itemHeight: CGFloat { 60 }
 }
 
 extension TreeListViewController {
@@ -89,14 +103,20 @@ extension TreeListViewController {
             iconLeadingConstraint.constant = 15 + leading
             
             switch item {
-            case .cell:
+            case .cell(let element):
                 let imageConfig = UIImage.SymbolConfiguration(pointSize: 16, weight: .ultraLight, scale: .default)
                 iconImageView.image = UIImage(systemName: "doc", withConfiguration: imageConfig)
-            case .section:
-                iconImageView.image = UIImage(systemName: "folder.fill")
+                label.text = "\(element.element)"
+            case let .section(element, state):
+                switch state {
+                case .collapse:
+                    iconImageView.image = UIImage(systemName: "folder.fill")
+                default:
+                    iconImageView.image = UIImage(systemName: "folder")
+                }
+                
+                label.text = "\(element.element)"
             }
-            
-            label.text = "\(element.element)" + "  state: \(item.element.state)"
         }
     }
     
@@ -104,28 +124,16 @@ extension TreeListViewController {
         let id: Int
         var element: Int
         var level: Int
-        var superIdentifier: Int?
+        var superIdentifier: Int
         var rank: Int
         var state: BranchNodeState
         
-        static var emptyRootElement: Element {
-            .init(id: -1, element: -1, level: 0, superIdentifier: nil, rank: 0, state: .expand)
+        static var invisableRoot: Element {
+            .init(id: -1, element: -1, level: 0, superIdentifier: -2, rank: 0, state: .expand)
         }
         
         static func == (lhs: Self, rhs: Self) -> Bool {
             lhs.id == rhs.id
         }
-    }
-}
-
-extension TreeListViewController: TreeListViewDelegate {
-    var itemHeight: CGFloat { 100 }
-    
-    func treeListView<Cell>(
-        _ listView: TreeListStaticView<Cell>,
-        didSelected element: ListViewItem<Cell.Element>,
-        of cell: Cell
-    ) where Cell : ListViewCellProtocol {
-        print("tapped: \(element.element.element)")
     }
 }
