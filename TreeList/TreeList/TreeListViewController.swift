@@ -119,13 +119,13 @@ extension TreeListViewController {
 }
 
 extension TreeListViewController: TreeListViewDelegate {
-    var itemHeight: CGFloat { 60 }
+    var itemHeight: CGFloat { 100 }
     
     func treeListView<Cell>(
         _ listView: TreeListStaticView<Cell>,
         didSelected element: ListViewItem<Cell.Element>,
         of cell: Cell
     ) where Cell : ListViewCellProtocol {
-//        print("tapped: \(element.element)")
+        print("tapped: \(element.element.element)")
     }
 }

@@ -1,11 +1,11 @@
 
 import UIKit
 
-public protocol TreeListViewDynamicDataSource: class {
+public protocol TreeListViewDynamicDataSource: AnyObject {
 	associatedtype Element: TreeElementProtocol
 }
 
-public protocol TreeListViewDelegate: class {
+public protocol TreeListViewDelegate: AnyObject {
 	var itemHeight: CGFloat { get }
 	
 	func treeListView<Cell: ListViewCellProtocol>(
@@ -58,6 +58,12 @@ public final class TreeListStaticView<ListCell: ListViewCellProtocol>: UIView, U
 	
 	private typealias Cell = TreeListCell<ListCell>
 	private typealias Header = TreeListHeader<ListCell>
+    private var _isNotInToggle = true
+    private let fetchToggleStateQeuue = DispatchQueue(label: "com.TreeListStaticView.fetch")
+    private var isNotInToggle: Bool {
+        get { fetchToggleStateQeuue.sync { _isNotInToggle } }
+        set { fetchToggleStateQeuue.async { self._isNotInToggle = newValue } }
+    }
 	
 	public init(elements: [Element]) {
 		self.dataSourceTree = .init(source: elements)
@@ -120,7 +126,7 @@ public final class TreeListStaticView<ListCell: ListViewCellProtocol>: UIView, U
             
             self.toggle(section: section) { [weak self] in
                 guard let self = self else { return }
-                
+                print("section: \(section)")
                 if $0 { self.triger(didSelected: .section(element), of: cell) }
             }
 		}
@@ -129,9 +135,9 @@ public final class TreeListStaticView<ListCell: ListViewCellProtocol>: UIView, U
 	}
     
     private func toggle(section: Int, completion: @escaping (Bool) -> Void) {
-		func update(_ editChange: EditChange) {
-			print("start performBatchUpdates" + "section: \(self.sections.count)")
-
+        func update(_ editChange: EditChange) {
+            tableView.isUserInteractionEnabled = false
+            
 			tableView.performBatchUpdates {
                 if !editChange.removeIndexPaths.isEmpty {
                     tableView.deleteRows(at: editChange.removeIndexPaths, with: .fade)
@@ -152,20 +158,17 @@ public final class TreeListStaticView<ListCell: ListViewCellProtocol>: UIView, U
 			} completion: { isFinished in
                 if isFinished {
                     self.tableView.reloadData()
+                    self.tableView.isUserInteractionEnabled = true
+                    self.isNotInToggle = true
                 }
-
-				print("after performBatchUpdates" + "section: \(self.sections.count)")
-				self.sections.forEach {
-					let spacing = (0...$0.element.level).reduce("") { r, _ in r + "    " }
-
-					print(spacing + "section: \($0.element.element)")
-
-					$0.cellElements.forEach { element in
-						print(spacing + "cell: \(element.element)")
-					}
-				}
 			}
 		}
+        
+        guard isNotInToggle else {
+            return
+        }
+        
+        isNotInToggle = false
         
         dataSourceTree.toggle(section: section) { change in
             if case .none = change {

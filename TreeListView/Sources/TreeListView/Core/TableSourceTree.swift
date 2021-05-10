@@ -151,9 +151,9 @@ extension TableSourceTree {
                 return
             }
             
-            print("toggle section: \([sections[section].id]) count: \(sections.count)")
+//            print("toggle section: \([sections[section].id]) count: \(sections.count)")
             completion(caculateChange())
-            print("toggleedd section: \([sections[section].id]) count: \(sections.count)")
+//            print("toggleedd section: \([sections[section].id]) count: \(sections.count)")
             self._inToggleChangeCaculating = false
         }
 	}

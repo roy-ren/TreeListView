@@ -43,12 +43,11 @@ class TreeListCell<Content: ListViewCellProtocol>: UITableViewCell, TreeListView
 
 class TreeListHeader<
     Content: ListViewCellProtocol
->: UITableViewHeaderFooterView, TreeListViewReuseViewProtocol, UIGestureRecognizerDelegate {
+>: UITableViewHeaderFooterView, TreeListViewReuseViewProtocol {
 	let content: Content
 	
 	typealias TappedClosure = (Content) -> Void
 	var tappedClosure: TappedClosure?
-	
 	
 	override init(reuseIdentifier: String?) {
 		content = .init()
@@ -56,29 +55,22 @@ class TreeListHeader<
 		content.addedAsContent(toSuper: contentView)
 		
 		let gesture = UITapGestureRecognizer(target: self, action: #selector(didTappedHeader(_:)))
-        gesture.numberOfTapsRequired = 1
-        gesture.numberOfTouchesRequired = 1
-        
 		contentView.addGestureRecognizer(gesture)
-        
-        gesture.delegate = self
 	}
 	
 	required init?(coder: NSCoder) {
 		fatalError("init(coder:) has not been implemented")
 	}
+    
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        tappedClosure = nil
+    }
 	
 	@objc
     func didTappedHeader(_ gesture: UITapGestureRecognizer) {
-//        print("Tapped \(self) \(Date())")
+        print("gesture: \(gesture)")
 		tappedClosure?(content)
-	}
-    
-    // MARK: - UIGestureRecognizerDelegate
-    override func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
-        print(gestureRecognizer.numberOfTouches)
-        
-        return true
     }
 }
 
